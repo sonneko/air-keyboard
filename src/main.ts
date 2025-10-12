@@ -12,7 +12,7 @@ const canvasElement = document.getElementById("output_canvas") as HTMLCanvasElem
 const canvasCtx = canvasElement.getContext("2d")!;
 
 let handLandmarker: HandLandmarker | undefined = undefined;
-// let lastVideoTime = -1;
+let lastVideoTime = -1;
 
 // HandLandmarkerの初期化
 const createHandLandmarker = async () => {
