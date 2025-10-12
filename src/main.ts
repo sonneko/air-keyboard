@@ -1,7 +1,8 @@
 import {
   HandLandmarker,
   FilesetResolver,
-  DrawingUtils
+  DrawingUtils,
+  type Landmark
 } from "@mediapipe/tasks-vision";
 import "./style.css";
 
@@ -71,6 +72,10 @@ const predictWebcam = () => {
   canvasElement.width = video.videoWidth;
   canvasElement.height = video.videoHeight;
 
+  let pre_fingers: Landmark[] = [];
+  let fingers: Landmark[] = [];
+  let is_ready = true;
+
   // 現在のフレームで検出を実行
   const loop = () => {
     lastVideoTime = video.currentTime;
@@ -80,9 +85,12 @@ const predictWebcam = () => {
     // 描画処理
     canvasCtx.save();
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
-    
+
+    pre_fingers = fingers;
+
     // 検出結果があれば描画
     if (results.landmarks) {
+      fingers = [];
       const drawingUtils = new DrawingUtils(canvasCtx);
       for (const landmarks of results.landmarks) {
         // 骨格を描画
@@ -93,14 +101,46 @@ const predictWebcam = () => {
 
         // 指先のみ描画
         landmarks.forEach((landmark, index) => {
-          if (index === 0 || index === 5 || index === 9 || index === 13 || index === 17) {
+          if (index === 8 || index === 16 || index === 12 || index === 20 || index === 4) {
             drawingUtils.drawLandmarks([landmark], {
               color: "#FF0000",
               lineWidth: 2,
               radius: 5,
             });
+            fingers.push(landmark);
           }
         });
+
+        const diff: (Landmark | null)[] = fingers.map((finger, index) => {
+          if (pre_fingers[index] !== undefined) {
+            const ret = {
+              x: finger.x - pre_fingers[index].x,
+              y: finger.y - pre_fingers[index].y,
+              z: finger.z - pre_fingers[index].z,
+            }
+            if (Math.abs(ret.x) < 0.03 && 0.015 < Math.abs(ret.y) && Math.abs(ret.y) < 0.03 && Math.abs(ret.z) < 0.03 && is_ready) {
+              is_ready = false;
+              if (ret.y > 0 || ret.z > 0) {
+                const e = document.getElementById("console");
+                if (e?.innerText)
+                  e.innerText = JSON.stringify(ret);
+              }
+              return finger;
+            }
+            is_ready = true;
+            return null;
+          } else {
+            is_ready = true;
+            return null;
+          }
+        });
+
+        diff.filter(item => item !== null).map(pushed => {
+          // const e = document.getElementById("console");
+          // if (e?.innerText)
+          //   e.innerText = JSON.stringify(pushed);
+        })
+
       }
     }
     canvasCtx.restore();
