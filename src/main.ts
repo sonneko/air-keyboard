@@ -12,7 +12,7 @@ const canvasElement = document.getElementById("output_canvas") as HTMLCanvasElem
 const canvasCtx = canvasElement.getContext("2d")!;
 
 let handLandmarker: HandLandmarker | undefined = undefined;
-let lastVideoTime = -1;
+// let lastVideoTime = -1;
 
 // HandLandmarkerの初期化
 const createHandLandmarker = async () => {
@@ -111,7 +111,7 @@ const predictWebcam = () => {
           }
         });
 
-        const diff: (Landmark | null)[] = fingers.map((finger, index) => {
+        const _diff: (Landmark | null)[] = fingers.map((finger, index) => {
           if (pre_fingers[index] !== undefined) {
             const ret = {
               x: finger.x - pre_fingers[index].x,
@@ -135,11 +135,11 @@ const predictWebcam = () => {
           }
         });
 
-        diff.filter(item => item !== null).map(pushed => {
+        // diff.filter(item => item !== null).map(pushed => {
           // const e = document.getElementById("console");
           // if (e?.innerText)
           //   e.innerText = JSON.stringify(pushed);
-        })
+        // })
 
       }
     }
