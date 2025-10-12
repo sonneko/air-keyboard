@@ -37,3 +37,9 @@ body {
 #webcam {
   transform: scaleY(-1) scaleX(-1);
 }
+
+#graph {
+  
+  height: 20%;
+  width: 100%;
+}

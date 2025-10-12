@@ -4,7 +4,19 @@ import {
   DrawingUtils,
   type Landmark
 } from "@mediapipe/tasks-vision";
+import { dot, getDeg } from "./lib";
 import "./style.css";
+import { updateChart } from "./graph";
+
+type number10 = [number, number, number, number, number, number, number, number, number, number,];
+type DegreesHistory = [
+  number10, number10, number10, number10
+]
+
+function log(message: unknown) {
+  const e = document.getElementById("console");
+  if (e) e.innerText = JSON.stringify(message);
+}
 
 // DOM要素の取得
 const video = document.getElementById("webcam") as HTMLVideoElement;
@@ -13,6 +25,10 @@ const canvasCtx = canvasElement.getContext("2d")!;
 
 let handLandmarker: HandLandmarker | undefined = undefined;
 let lastVideoTime = -1;
+
+let degrees_history: DegreesHistory = Array(4 as const).fill(null).map(() => Array(10 as const).fill(0)) as DegreesHistory;
+let degrees_integral_history: [number10, number10] = Array(2).fill(null).map(() => Array(10 as const).fill(0)) as [number10, number10];
+
 
 // HandLandmarkerの初期化
 const createHandLandmarker = async () => {
@@ -48,14 +64,9 @@ const enableCam = async () => {
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     video.srcObject = stream;
 
-    // 'playing'イベントは、ビデオの再生が実際に開始されたときに発火します。
-    // これにより、SafariやiOSでの自動再生の問題を回避しやすくなります。
     video.addEventListener("playing", predictWebcam);
 
-    // loadeddataイベントも残しておくと、より堅牢になります。
-    // playingイベントが何らかの理由で発火しない場合のフォールバックとして機能します。
     video.addEventListener("loadeddata", () => {
-      // loadeddataが発火してもまだ再生が始まっていない場合があるため、明示的にplay()を呼び出します。
       video.play();
     });
   } catch (err) {
@@ -72,10 +83,6 @@ const predictWebcam = () => {
   canvasElement.width = video.videoWidth;
   canvasElement.height = video.videoHeight;
 
-  let pre_fingers: Landmark[] = [];
-  let fingers: Landmark[] = [];
-  let is_ready = true;
-
   // 現在のフレームで検出を実行
   const loop = () => {
     lastVideoTime = video.currentTime;
@@ -86,13 +93,16 @@ const predictWebcam = () => {
     canvasCtx.save();
     canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
 
-    pre_fingers = fingers;
-
     // 検出結果があれば描画
     if (results.landmarks) {
-      fingers = [];
       const drawingUtils = new DrawingUtils(canvasCtx);
-      for (const landmarks of results.landmarks) {
+
+      degrees_history[3] = [...degrees_history[2]];
+      degrees_history[2] = [...degrees_history[1]];
+      degrees_history[1] = [...degrees_history[0]];
+
+      for (let i = 0; i < results.landmarks.length; i++) {
+        const landmarks = results.landmarks[i];
         // 骨格を描画
         drawingUtils.drawConnectors(landmarks, HandLandmarker.HAND_CONNECTIONS, {
           color: "#00FF00",
@@ -101,48 +111,58 @@ const predictWebcam = () => {
 
         // 指先のみ描画
         landmarks.forEach((landmark, index) => {
-          if (index === 8 || index === 16 || index === 12 || index === 20 || index === 4) {
+          if (index === 4 || index === 8 || index === 12 || index === 16 || index === 20) {
             drawingUtils.drawLandmarks([landmark], {
               color: "#FF0000",
               lineWidth: 2,
               radius: 5,
             });
-            fingers.push(landmark);
+          } else if (index === 2 || index === 5 || index === 9 || index === 13 || index === 17) {
+            drawingUtils.drawLandmarks([landmark], {
+              color: "#00FF00",
+              lineWidth: 2,
+              radius: 5,
+            })
+          } else if (index === 0) {
+            drawingUtils.drawLandmarks([landmark], {
+              color: "#0000ff",
+              lineWidth: 2,
+              radius: 5,
+            })
           }
         });
 
-        const _diff: (Landmark | null)[] = fingers.map((finger, index) => {
-          if (pre_fingers[index] !== undefined) {
-            const ret = {
-              x: finger.x - pre_fingers[index].x,
-              y: finger.y - pre_fingers[index].y,
-              z: finger.z - pre_fingers[index].z,
-            }
-            if (Math.abs(ret.x) < 0.03 && 0.015 < Math.abs(ret.y) && Math.abs(ret.y) < 0.03 && Math.abs(ret.z) < 0.03 && is_ready) {
-              is_ready = false;
-              if (ret.y > 0 || ret.z > 0) {
-                const e = document.getElementById("console");
-                if (e?.innerText)
-                  e.innerText = JSON.stringify(ret);
-              }
-              return finger;
-            }
-            is_ready = true;
-            return null;
-          } else {
-            is_ready = true;
-            return null;
-          }
-        });
+        const handedness = results.handedness[i][0].categoryName;
+        const offset = (handedness === "Left") ? 0 : 5;
 
-        // diff.filter(item => item !== null).map(pushed => {
-          // const e = document.getElementById("console");
-          // if (e?.innerText)
-          //   e.innerText = JSON.stringify(pushed);
-        // })
 
+        degrees_history[0][0 + offset] = getDeg(landmarks[4], landmarks[0], landmarks[2]);
+        degrees_history[0][1 + offset] = getDeg(landmarks[8], landmarks[0], landmarks[5]);
+        degrees_history[0][2 + offset] = getDeg(landmarks[12], landmarks[0], landmarks[9]);
+        degrees_history[0][3 + offset] = getDeg(landmarks[16], landmarks[0], landmarks[13]);
+        degrees_history[0][4 + offset] = getDeg(landmarks[20], landmarks[0], landmarks[17]);
       }
     }
+    const degrees_integral = (() => {
+      const innerLength = degrees_history[0].length;
+      let ret: number10 = Array(innerLength).fill(0) as number10;
+      for (const innerArray of degrees_history) {
+        for (let i = 0; i < innerLength; i++) {
+          ret[i] += innerArray[i];
+        }
+      }
+      return ret.map(sum => sum / 4) as number10;
+    })();
+
+    degrees_integral_history[1] = [...degrees_integral_history[0]];
+    degrees_integral_history[0] = [...degrees_integral];
+
+    const degrees_integral_diff: number10 = degrees_integral_history[0].map((item, i) =>
+      item - degrees_integral_history[1][i]
+    ) as number10;
+
+    updateChart(degrees_integral_diff);
+
     canvasCtx.restore();
 
     // 次のフレームで再度実行
@@ -150,8 +170,14 @@ const predictWebcam = () => {
   };
 
   // 最初のフレームを開始
-  loop();
+  try {
+    loop();
+  } catch (err) {
+    alert(err);
+  }
 };
 
 // 実行開始
 createHandLandmarker();
+
+
