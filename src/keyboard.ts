@@ -1,9 +1,8 @@
 import { updateChart } from "./graph";
-import { DrawingUtils, type Landmark } from "@mediapipe/tasks-vision";
+import { DrawingUtils, type HandLandmarkerResult, type Landmark } from "@mediapipe/tasks-vision";
 import { canvasCtx } from "./init";
-import { updateChart } from "./graph";
 
-export function keyboardSystemUpdate(results) {
+export function keyboardSystemUpdate(results: HandLandmarkerResult) {
     const drawingUtils = new DrawingUtils(canvasCtx);
     let leftLandmarks, rightLandmarks;
     let fingersY: number[] = [];
@@ -19,7 +18,6 @@ export function keyboardSystemUpdate(results) {
             drawingUtils.drawLandmarks([landmark], {
                 color: "#FF0000",
                 lineWidth: 2,
-                radius: 5,
             });
             fingersY.push(landmark.y);
         }

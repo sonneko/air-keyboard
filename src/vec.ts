@@ -1,4 +1,4 @@
-type Vec = {
+export type Vec = {
     x: number,
     y: number,
     z: number,
@@ -35,3 +35,6 @@ export function scale(a: Vec): number {
     return Math.sqrt(a.x**2 + a.y**2 + a.z**2);
 }
 
+export function getDistance(a: Vec, b: Vec): number {
+    return scale(add(a, ne(b)));
+}

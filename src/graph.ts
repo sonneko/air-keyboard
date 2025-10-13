@@ -46,7 +46,7 @@ let chart = new Chart(ctx, {
     options: {
         animation: false, // リアルタイム更新ではアニメーションをオフにするとパフォーマンスが向上
         scales: {
-            y: { beginAtZero: true }
+            y: { beginAtZero: true}
         },
         plugins: {
             legend: {

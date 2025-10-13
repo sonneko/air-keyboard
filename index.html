@@ -7,14 +7,13 @@
     <title>MediaPipe Hand Landmarker Demo</title>
   </head>
   <body>
-    <h1>MediaPipe Hand Landmarker Demo</h1>
-    <p>カメラに手をかざしてください。</p>
     <code id="console">d</code>
     <canvas id="graph"></canvas>
     <div class="container">
       <video id="webcam" autoplay muted playsinline></video>
       <canvas id="output_canvas"></canvas>
     </div>
+    <div id="cursor">↙︎</div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
