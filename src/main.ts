@@ -52,8 +52,5 @@ const loop = () => {
   requestAnimationFrame(loop);
 }
 
-try {
-  loop();
-} catch (err) {
-  log(err.stack);
-}
+
+loop();
