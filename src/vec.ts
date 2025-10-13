@@ -35,8 +35,3 @@ export function scale(a: Vec): number {
     return Math.sqrt(a.x**2 + a.y**2 + a.z**2);
 }
 
-
-export function log(message: unknown) {
-  const e = document.getElementById("console");
-  if (e) e.innerText = JSON.stringify(message);
-}
