@@ -38,3 +38,21 @@ export function scale(a: Vec): number {
 export function getDistance(a: Vec, b: Vec): number {
     return scale(add(a, ne(b)));
 }
+
+export function scalar_multi(a: Vec, k: number): Vec{
+    return {
+        x: a.x * k,
+        y: a.y * k,
+        z: a.z * k,
+    }
+}
+
+export function getDegXY(a: Vec): {
+    x: number,
+    y: number,
+} {
+    return {
+        x: Math.atan(a.x / a.z),
+        y: Math.atan(a.y / a.z),
+    }
+}
